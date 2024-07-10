@@ -39,3 +39,8 @@ Caso queira o terminal livre, utiize a flag `-d`:
 ```
 docker-compose up -d
 ```
+Note que ao user essa flag, o container irá rodar em background em seu computador. Para parar o serviço utilize o comando:
+
+```
+docker-compose stop
+```
