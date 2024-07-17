@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  minio_network:
+    driver: bridge
+
 # Settings and configurations that are common for all containers
 x-minio-common: &minio-common
   image: quay.io/minio/minio:latest
@@ -24,3 +28,29 @@ services:
       - type: bind
         source: ${MINIO_DATA_PATH}
         target: /mnt/data
+    networks:
+      - minio_network
+
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      - minio1
+    networks:
+      - minio_network
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_POLICY_PATH: ${MINIO_POLICY_PATH}
+      MINIO_BACKEND_USER: ${MINIO_BACKEND_USER}
+      MINIO_BACKEND_PASSWORD: ${MINIO_BACKEND_PASSWORD}
+    volumes:
+      - ${MINIO_POLICY_PATH}:/mnt/policy.json
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio1:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/news;
+      /usr/bin/mc anonymous set-json /mnt/policy.json myminio/news;
+      /usr/bin/mc admin user add myminio ${MINIO_BACKEND_USER} ${MINIO_BACKEND_PASSWORD};
+      /usr/bin/mc admin policy attach myminio readwrite --user=${MINIO_BACKEND_USER};
+      exit 0;
+      "
